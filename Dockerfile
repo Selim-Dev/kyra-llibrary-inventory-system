@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -24,6 +27,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Copy package files
 COPY --from=builder /app/package*.json ./
 
@@ -43,5 +49,5 @@ ENV NODE_ENV=production
 # Expose port
 EXPOSE 3000
 
-# Run migrations and start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Run migrations, seed database, and start the application
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/prisma/seed.js && npm start"]
