@@ -3,6 +3,7 @@ import cors from 'cors';
 import healthRouter from './routes/health';
 import borrowRouter from './routes/borrow';
 import booksRouter from './routes/books';
+import buyRouter from './routes/buy';
 import adminRouter from './routes/admin';
 import { errorHandler } from './middleware';
 
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/health', healthRouter);
 app.use('/api/books', booksRouter); // GET /api/books for search
 app.use('/api/books', borrowRouter); // POST /api/books/:isbn/borrow and /api/books/:isbn/return
+app.use('/api', buyRouter); // POST /api/books/:isbn/buy and /api/purchases/:id/cancel
 app.use('/api/admin', adminRouter); // Admin endpoints
 
 // 404 handler (must be before error handler)
