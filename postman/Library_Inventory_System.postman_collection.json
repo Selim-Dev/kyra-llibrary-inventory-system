@@ -1,0 +1,466 @@
+{
+  "info": {
+    "_postman_id": "library-inventory-system",
+    "name": "Library Inventory System",
+    "description": "REST API for managing a library/book store inventory system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "user@example.com",
+      "type": "string"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@dummy-library.com",
+      "type": "string"
+    },
+    {
+      "key": "testIsbn",
+      "value": "0b7baf79-c0bc-40f3-a2f3-e2441442649c",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the API is running"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "Search Books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books"],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "The",
+                  "disabled": true
+                },
+                {
+                  "key": "author",
+                  "value": "Shakespeare",
+                  "disabled": true
+                },
+                {
+                  "key": "genre",
+                  "value": "Mystery",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search books with optional filters (title, author, genre) and pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Books by Title",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?title=The&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books"],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "The"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search books by title (partial match, case-insensitive)"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Books by Author",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?author=Shakespeare&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books"],
+              "query": [
+                {
+                  "key": "author",
+                  "value": "Shakespeare"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search books by author (partial match, case-insensitive)"
+          },
+          "response": []
+        },
+        {
+          "name": "Search Books by Genre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?genre=Mystery&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books"],
+              "query": [
+                {
+                  "key": "genre",
+                  "value": "Mystery"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Search books by genre (exact match)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Borrow",
+      "item": [
+        {
+          "name": "Borrow Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{userEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{testIsbn}}/borrow",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books", "{{testIsbn}}", "borrow"]
+            },
+            "description": "Borrow a book by ISBN. User can have max 3 active borrows."
+          },
+          "response": []
+        },
+        {
+          "name": "Return Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{userEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{testIsbn}}/return",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books", "{{testIsbn}}", "return"]
+            },
+            "description": "Return a borrowed book by ISBN"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Buy",
+      "item": [
+        {
+          "name": "Buy Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{userEmail}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{testIsbn}}/buy",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "books", "{{testIsbn}}", "buy"]
+            },
+            "description": "Buy a book by ISBN. Requires X-Idempotency-Key header. User can own max 2 copies per book and 10 total."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Purchase",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{userEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/purchases/:purchaseId/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "purchases", ":purchaseId", "cancel"],
+              "variable": [
+                {
+                  "key": "purchaseId",
+                  "value": "replace-with-purchase-id",
+                  "description": "The ID of the purchase to cancel"
+                }
+              ]
+            },
+            "description": "Cancel a purchase within 5 minutes of purchase time"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{adminEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/events?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "events"],
+              "query": [
+                {
+                  "key": "userEmail",
+                  "value": "user@example.com",
+                  "disabled": true
+                },
+                {
+                  "key": "bookIsbn",
+                  "value": "0b7baf79-c0bc-40f3-a2f3-e2441442649c",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "BORROW",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01T00:00:00Z",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31T23:59:59Z",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "View all system events with optional filters. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wallet Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{adminEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/wallet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "wallet"]
+            },
+            "description": "View the current wallet balance. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wallet Movements",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{adminEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/wallet/movements?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "wallet", "movements"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "credit",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01T00:00:00Z",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31T23:59:59Z",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "View wallet movements with optional filters. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Simulated Emails",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{adminEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/emails?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "emails"],
+              "query": [
+                {
+                  "key": "recipient",
+                  "value": "supply@library.com",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "LOW_STOCK",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "View simulated emails with optional filters. Admin only."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Email",
+                "value": "{{adminEmail}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{userEmail}}/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users", "{{userEmail}}", "history"]
+            },
+            "description": "View a specific user's borrowing and buying history. Admin only."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
