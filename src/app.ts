@@ -2,6 +2,8 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import healthRouter from './routes/health';
 import borrowRouter from './routes/borrow';
+import booksRouter from './routes/books';
+import adminRouter from './routes/admin';
 import { errorHandler } from './middleware';
 
 // Import types to extend Express Request
@@ -16,7 +18,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/health', healthRouter);
-app.use('/api/books', borrowRouter);
+app.use('/api/books', booksRouter); // GET /api/books for search
+app.use('/api/books', borrowRouter); // POST /api/books/:isbn/borrow and /api/books/:isbn/return
+app.use('/api/admin', adminRouter); // Admin endpoints
 
 // 404 handler (must be before error handler)
 app.use((_req: Request, res: Response) => {
