@@ -1,6 +1,10 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
+import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import healthRouter from './routes/health';
+import { errorHandler } from './middleware';
+
+// Import types to extend Express Request
+import './types';
 
 const app: Application = express();
 
@@ -12,18 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/health', healthRouter);
 
-// Global error handler
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: {
-      code: 'INTERNAL_ERROR',
-      message: 'An unexpected error occurred',
-    },
-  });
-});
-
-// 404 handler
+// 404 handler (must be before error handler)
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
     error: {
@@ -32,5 +25,8 @@ app.use((_req: Request, res: Response) => {
     },
   });
 });
+
+// Global error handler (must be last)
+app.use(errorHandler);
 
 export default app;

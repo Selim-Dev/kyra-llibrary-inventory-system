@@ -72,7 +72,7 @@ async function seedWallet(): Promise<void> {
   // Use a transaction to ensure atomicity and idempotency
   await prisma.$transaction(async (tx) => {
     // Create wallet if it doesn't exist
-    const wallet = await tx.libraryWallet.upsert({
+    await tx.libraryWallet.upsert({
       where: { id: WALLET_ID },
       update: {}, // Don't update if exists
       create: {
