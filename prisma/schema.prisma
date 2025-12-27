@@ -1,0 +1,243 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Book {
+  id               String     @id @default(uuid())
+  isbn             String     @unique
+  title            String
+  authors          String[]
+  genres           String[]
+  sellPriceCents   Int
+  borrowPriceCents Int
+  stockPriceCents  Int
+  availableCopies  Int
+  seededCopies     Int        // Original count for restock reference
+  year             Int?
+  pages            Int?
+  publisher        String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  borrows     Borrow[]
+  purchases   Purchase[]
+  restockJobs Job[]      @relation("BookRestockJobs")
+  events      Event[]
+
+  @@index([title])
+  @@index([authors], type: Gin)
+  @@index([genres], type: Gin)
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  createdAt DateTime   @default(now())
+
+  borrows   Borrow[]
+  purchases Purchase[]
+  events    Event[]
+}
+
+model Borrow {
+  id         String       @id @default(uuid())
+  userId     String
+  bookId     String
+  borrowedAt DateTime     @default(now())
+  dueAt      DateTime
+  returnedAt DateTime?
+  status     BorrowStatus @default(ACTIVE)
+  // Nullable activeKey for uniqueness: set to "userId:bookId" when ACTIVE, NULL when RETURNED
+  // NULL values don't collide, allowing unlimited borrow history
+  activeKey  String?      @unique
+
+  user        User   @relation(fields: [userId], references: [id])
+  book        Book   @relation(fields: [bookId], references: [id])
+  reminderJob Job?   @relation("BorrowReminderJob")
+  events      Event[]
+
+  @@index([userId, status])
+  @@index([bookId])
+  @@index([dueAt])
+}
+
+
+enum BorrowStatus {
+  ACTIVE
+  RETURNED
+}
+
+model Purchase {
+  id          String         @id @default(uuid())
+  userId      String
+  bookId      String
+  purchasedAt DateTime       @default(now())
+  canceledAt  DateTime?
+  status      PurchaseStatus @default(ACTIVE)
+  priceCents  Int
+
+  user   User    @relation(fields: [userId], references: [id])
+  book   Book    @relation(fields: [bookId], references: [id])
+  events Event[]
+
+  @@index([userId, status])
+  @@index([bookId])
+  @@index([purchasedAt])
+}
+
+enum PurchaseStatus {
+  ACTIVE
+  CANCELED
+}
+
+model LibraryWallet {
+  id               String   @id @default("library-wallet")
+  milestoneReached Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  movements WalletMovement[]
+}
+
+model WalletMovement {
+  id            String       @id @default(uuid())
+  walletId      String
+  amountCents   Int          // Positive = credit, Negative = debit
+  type          MovementType
+  reason        String
+  relatedEntity String?      // e.g., "borrow:uuid" or "purchase:uuid"
+  dedupeKey     String?      @unique // For exactly-once: e.g., "BORROW:borrowId", "RESTOCK:jobId"
+  createdAt     DateTime     @default(now())
+
+  wallet LibraryWallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum MovementType {
+  BORROW_INCOME
+  BUY_INCOME
+  CANCEL_REFUND
+  RESTOCK_EXPENSE
+  INITIAL_BALANCE
+}
+
+
+model Job {
+  id          String    @id @default(uuid())
+  type        JobType
+  status      JobStatus @default(PENDING)
+  payload     Json
+  runAt       DateTime
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(10)
+  lastError   String?
+  lockedAt    DateTime? // For lease-based claiming
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  // Nullable activeKey for uniqueness: set when PENDING/PROCESSING, NULL when completed/canceled
+  // Format: "RESTOCK:bookId" or "REMINDER:borrowId"
+  // NULL values don't collide, allowing unlimited job history
+  activeKey String? @unique
+
+  // Relations
+  bookId   String?
+  book     Book?   @relation("BookRestockJobs", fields: [bookId], references: [id])
+  borrowId String? @unique
+  borrow   Borrow? @relation("BorrowReminderJob", fields: [borrowId], references: [id])
+
+  @@index([type, status, runAt])
+  @@index([bookId, type, status])
+}
+
+enum JobType {
+  RESTOCK
+  REMINDER
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+
+model Event {
+  id         String    @id @default(uuid())
+  type       EventType
+  userId     String?
+  bookId     String?
+  borrowId   String?
+  purchaseId String?
+  jobId      String?
+  metadata   Json?
+  dedupeKey  String?   @unique // For exactly-once event logging
+  createdAt  DateTime  @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id])
+  book     Book?     @relation(fields: [bookId], references: [id])
+  borrow   Borrow?   @relation(fields: [borrowId], references: [id])
+  purchase Purchase? @relation(fields: [purchaseId], references: [id])
+
+  @@index([type])
+  @@index([userId])
+  @@index([bookId])
+  @@index([createdAt])
+}
+
+enum EventType {
+  BORROW
+  RETURN
+  BUY
+  CANCEL_BUY
+  RESTOCK_SCHEDULED
+  RESTOCK_DELIVERED
+  REMINDER_SENT
+  LOW_STOCK_EMAIL
+  MILESTONE_EMAIL
+}
+
+model SimulatedEmail {
+  id        String    @id @default(uuid())
+  recipient String
+  subject   String
+  body      String
+  type      EmailType
+  dedupeKey String    @unique // e.g., "REMINDER:borrowId", "LOW_STOCK:isbn:jobId", "MILESTONE:2000"
+  createdAt DateTime  @default(now())
+
+  @@index([recipient])
+  @@index([createdAt])
+}
+
+enum EmailType {
+  LOW_STOCK
+  REMINDER
+  MILESTONE
+}
+
+model IdempotencyKey {
+  id         String   @id @default(uuid())
+  key        String
+  userId     String
+  endpoint   String
+  response   Json
+  statusCode Int
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@unique([key, userId, endpoint])
+  @@index([expiresAt])
+}
