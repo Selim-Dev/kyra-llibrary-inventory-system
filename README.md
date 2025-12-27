@@ -24,15 +24,42 @@ A REST API for managing a library/book store inventory system built with Node.js
 
 ### Using Docker (Recommended)
 
+#### Production Mode
+
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd library-inventory-system
 
-# Start the application with Docker Compose
+# Start the application with Docker Compose (production)
 docker-compose up --build
 
 # The API will be available at http://localhost:3000
+```
+
+#### Development Mode (with hot reload)
+
+```bash
+# Start the application in development mode
+docker-compose -f docker-compose.dev.yml up --build
+
+# The API will be available at http://localhost:3000
+# Source code changes will automatically reload the server
+```
+
+#### Docker Commands Reference
+
+```bash
+# Production
+docker-compose up --build          # Start in foreground
+docker-compose up -d --build       # Start in background
+docker-compose down                # Stop containers
+docker-compose down -v             # Stop and remove volumes
+
+# Development
+docker-compose -f docker-compose.dev.yml up --build
+docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.dev.yml down -v
 ```
 
 ### Local Development

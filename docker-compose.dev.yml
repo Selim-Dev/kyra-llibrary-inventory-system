@@ -1,21 +1,30 @@
-# Production Docker Compose - optimized for deployment
+# Development Docker Compose - with hot reload and volume mounts
+version: '3.8'
+
 services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "${PORT:-3000}:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/library?schema=public
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3000
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./books.json:/app/books.json
+      # Exclude node_modules from mount
+      - /app/node_modules
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
     networks:
-      - library-network
+      - library-network-dev
 
   db:
     image: postgres:15-alpine
@@ -24,7 +33,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=library
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d library"]
       interval: 5s
@@ -34,11 +43,11 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - library-network
+      - library-network-dev
 
 volumes:
-  postgres_data:
+  postgres_data_dev:
 
 networks:
-  library-network:
+  library-network-dev:
     driver: bridge

@@ -1,4 +1,4 @@
-# Build stage
+# Production Dockerfile - Multi-stage build for optimized image size
 FROM node:20-alpine AS builder
 
 WORKDIR /app
