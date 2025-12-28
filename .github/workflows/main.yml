@@ -1,0 +1,112 @@
+name: Build & Deploy Library Inventory System
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  Build:
+    name: Build, Tag & Push Docker Image
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_IMAGE_URI: ${{ secrets.ECR_IMAGE_URI }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Diagnostics
+        run: |
+          set -euo pipefail
+          echo "AWS_REGION: ${AWS_REGION:+set}" || true
+          if [ -n "${{ secrets.ECR_IMAGE_URI }}" ]; then echo "ECR_IMAGE_URI: set"; else echo "ECR_IMAGE_URI: missing"; fi
+          if [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then echo "AWS_ACCESS_KEY_ID: set"; else echo "AWS_ACCESS_KEY_ID: missing"; fi
+          if [ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then echo "AWS_SECRET_ACCESS_KEY: set"; else echo "AWS_SECRET_ACCESS_KEY: missing"; fi
+          if [ -n "${{ secrets.HOSTNAME }}" ]; then echo "HOSTNAME: set"; else echo "HOSTNAME: missing"; fi
+          if [ -n "${{ secrets.USER_NAME }}" ]; then echo "USER_NAME: set"; else echo "USER_NAME: missing"; fi
+          if [ -n "${{ secrets.PRIVATE_KEY }}" ]; then echo "PRIVATE_KEY: set"; else echo "PRIVATE_KEY: missing"; fi
+          docker --version
+
+      - name: Build, Tag & Push to ECR
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="${{ github.run_number }}"
+          REGISTRY="${ECR_IMAGE_URI%/*}"
+          REPO="${ECR_IMAGE_URI##*/}"
+
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | docker login --username AWS --password-stdin "$REGISTRY"
+
+          docker build -t "$REPO:$IMAGE_TAG" .
+          docker tag "$REPO:$IMAGE_TAG" "$ECR_IMAGE_URI:$IMAGE_TAG"
+          docker push "$ECR_IMAGE_URI:$IMAGE_TAG"
+
+  Deploy:
+    name: SSH & Deploy on EC2
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy docker-compose to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOSTNAME }}
+          username: ${{ secrets.USER_NAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          source: "docker-compose.yml,books.json,prisma"
+          target: "/home/ubuntu/library-inventory-system"
+
+      - name: SSH & Run Deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOSTNAME }}
+          username: ${{ secrets.USER_NAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            set -e
+
+            REPO_DIR=/home/ubuntu/library-inventory-system
+            IMAGE_TAG="${{ github.run_number }}"
+            ECR_IMAGE_URI="${{ secrets.ECR_IMAGE_URI }}"
+            REGISTRY="${ECR_IMAGE_URI%/*}"
+            ECR_IMAGE="$ECR_IMAGE_URI:$IMAGE_TAG"
+
+            cd $REPO_DIR
+
+            # Authenticate with ECR
+            aws ecr get-login-password \
+              --region ${{ secrets.AWS_REGION }} \
+              | docker login \
+                --username AWS \
+                --password-stdin "$REGISTRY"
+
+            # Pull the new image
+            docker pull "$ECR_IMAGE"
+
+            # Create docker-compose override to use ECR image and port 4000
+            cat <<EOF > docker-compose.override.yml
+            services:
+              app:
+                image: $ECR_IMAGE
+                build: !reset null
+                ports:
+                  - "4000:3000"
+            EOF
+
+            # Stop existing containers
+            docker-compose down || true
+
+            # Start with new image
+            docker-compose up -d
+
+            # Cleanup
+            docker image prune -f
