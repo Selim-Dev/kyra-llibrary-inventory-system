@@ -2,8 +2,6 @@
  * Books Routes - Handles book search endpoints
  *
  * GET /api/books - Search books with filters and pagination
- *
- * Requirements: 7.1-7.5
  */
 
 import { Router, Request, Response, NextFunction } from 'express';

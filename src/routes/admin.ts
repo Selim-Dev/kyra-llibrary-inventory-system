@@ -6,8 +6,6 @@
  * GET /api/admin/wallet/movements - View wallet movements with filters
  * GET /api/admin/emails - View simulated emails
  * GET /api/admin/users/:email/history - View user history (bonus)
- *
- * Requirements: 8.1-8.7, 9.1-9.4, 10.1-10.3, 15.1-15.4
  */
 
 import { Router, Request, Response, NextFunction } from 'express';

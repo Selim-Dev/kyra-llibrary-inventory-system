@@ -4,8 +4,6 @@
  * Key features:
  * - getEvents() - Get events with filters and pagination
  * - createEvent() - Create a new event with dedupeKey for idempotency
- *
- * Requirements: 8.1-8.7
  */
 
 import { Event, EventType, Prisma } from '@prisma/client';
@@ -56,8 +54,6 @@ export interface EventResponse {
  * - bookIsbn: filter by book ISBN
  * - type: filter by event type
  * - startDate/endDate: filter by date range
- *
- * Requirements: 8.1-8.7
  *
  * @param filters - Optional filters for user, book, type, date range, and pagination
  * @returns Paginated list of events

@@ -1,8 +1,6 @@
 /**
  * Custom error classes for consistent error handling.
  * Each error type maps to a specific HTTP status code.
- *
- * Requirements: 19.2, 19.3
  */
 
 export abstract class AppError extends Error {

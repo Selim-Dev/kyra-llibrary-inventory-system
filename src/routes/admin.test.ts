@@ -7,8 +7,6 @@
  * - Wallet balance calculation
  * - Email listing
  * - User history
- *
- * Requirements: 7.1-7.5, 8.1-8.7, 9.1-9.4, 10.1-10.3, 15.1-15.4
  */
 
 import request from 'supertest';

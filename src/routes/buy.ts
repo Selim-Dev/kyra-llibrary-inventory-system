@@ -3,8 +3,6 @@
  *
  * POST /api/books/:isbn/buy - Buy a book
  * POST /api/purchases/:id/cancel - Cancel a purchase
- *
- * Requirements: 4.1-4.15, 5.1-5.9
  */
 
 import { Router, Request, Response, NextFunction } from 'express';

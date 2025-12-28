@@ -7,8 +7,6 @@ const MAX_PAGE_SIZE = 100;
 /**
  * Parse pagination parameters from query string.
  * Provides defaults and validates bounds.
- *
- * Requirements: 19.4
  */
 export function parsePaginationParams(query: {
   page?: string;
@@ -35,8 +33,6 @@ export function parsePaginationParams(query: {
 
 /**
  * Calculate pagination metadata.
- *
- * Requirements: 19.4
  */
 export function calculatePaginationMeta(
   total: number,
@@ -62,8 +58,6 @@ export function calculateSkip(page: number, pageSize: number): number {
 
 /**
  * Create a paginated response object.
- *
- * Requirements: 19.4
  */
 export function createPaginatedResponse<T>(
   data: T[],

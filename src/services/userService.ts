@@ -3,8 +3,6 @@
  *
  * Key features:
  * - getUserHistory() - Get user's borrowing and buying history with summary stats
- *
- * Requirements: 10.1-10.3
  */
 
 import { BorrowStatus, PurchaseStatus } from '@prisma/client';
@@ -69,8 +67,6 @@ export interface UserHistoryResponse {
 
 /**
  * Get a user's complete borrowing and buying history with summary statistics.
- *
- * Requirements: 10.1-10.3
  *
  * @param email - User's email address
  * @returns User history with borrows, purchases, and summary stats

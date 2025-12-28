@@ -7,8 +7,6 @@
  * - Property 7: Cancel Idempotency
  * - Property 8: Canceled Purchases Excluded from Limits
  *
- * Requirements: 4.1, 4.2, 4.13, 4.15, 5.7, 5.8, 16.4, 17.3, 17.4, 17.5
- *
  * NOTE: These are integration tests that require a running PostgreSQL database.
  * Run with: npm test -- --testPathPattern="buyService.test.ts"
  * Ensure DATABASE_URL is set in .env and the database is running.

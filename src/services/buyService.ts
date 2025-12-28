@@ -8,8 +8,6 @@
  * - Creates wallet movements, events with dedupeKey
  * - Checks for low stock and wallet milestone
  * - Cancel within 5 minutes with idempotency
- *
- * Requirements: 4.1-4.15, 5.1-5.9
  */
 
 import { Prisma, Purchase, Book } from '@prisma/client';
@@ -52,8 +50,6 @@ function hashTextToInt(text: string): number {
  * @param userEmail - The email of the user buying the book
  * @param bookIsbn - The ISBN of the book to buy
  * @returns BuyResult with the purchase record and whether it was existing
- *
- * Requirements: 4.1-4.15
  */
 export async function buyBook(userEmail: string, bookIsbn: string): Promise<BuyResult> {
   // Single transaction with advisory lock inside
@@ -176,8 +172,6 @@ export async function buyBook(userEmail: string, bookIsbn: string): Promise<BuyR
  * @param userEmail - The email of the user canceling the purchase
  * @param purchaseId - The ID of the purchase to cancel
  * @returns CancelResult with the purchase record and whether it was already canceled
- *
- * Requirements: 5.1-5.9
  */
 export async function cancelPurchase(
   userEmail: string,

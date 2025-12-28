@@ -3,8 +3,6 @@
  *
  * Key features:
  * - searchBooks() - Search books with filters and pagination
- *
- * Requirements: 7.1-7.5
  */
 
 import { Book, Prisma } from '@prisma/client';
@@ -85,8 +83,6 @@ function formatBookResponse(book: Book): BookResponse {
  * - title: partial match, case-insensitive (ILIKE)
  * - author: partial match, case-insensitive (raw SQL unnest + ILIKE)
  * - genre: exact match
- *
- * Requirements: 7.1-7.5
  *
  * @param filters - Optional filters for title, author, genre, and pagination
  * @returns Paginated list of books with formatted prices

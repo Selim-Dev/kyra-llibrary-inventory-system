@@ -7,8 +7,6 @@ const ADMIN_EMAIL = 'admin@dummy-library.com';
  * Must be used after userIdentification middleware.
  * - Checks if user email is admin@dummy-library.com
  * - Returns 403 if not admin
- *
- * Requirements: 18.2
  */
 export function adminOnly(
   req: Request,

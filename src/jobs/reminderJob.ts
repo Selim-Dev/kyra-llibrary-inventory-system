@@ -7,8 +7,6 @@
  * - Create simulated email with dedupeKey
  * - Create event with dedupeKey
  * - Exactly-once semantics via unique constraints
- *
- * Requirements: 13.1-13.8
  */
 
 import { Job, Prisma } from '@prisma/client';

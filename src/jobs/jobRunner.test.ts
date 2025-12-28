@@ -6,8 +6,6 @@
  * - Property 12: Restock Job Deduplication
  * - Job lease reclaim behavior
  *
- * Requirements: 12.2, 12.8, 13.5, 13.6, 13.7
- *
  * NOTE: These are integration tests that require a running PostgreSQL database.
  * Run with: npm test -- --testPathPattern="jobRunner.test.ts"
  */

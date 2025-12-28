@@ -8,8 +8,6 @@
  * - Increment inventory
  * - Create event with dedupeKey
  * - Handle insufficient funds with retry (throws error to trigger backoff)
- *
- * Requirements: 12.1-12.12
  */
 
 import { Job, Prisma } from '@prisma/client';

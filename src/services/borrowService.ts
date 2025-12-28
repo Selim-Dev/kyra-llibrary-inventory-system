@@ -8,8 +8,6 @@
  * - Atomic inventory decrement
  * - Creates wallet movements, events, and schedules reminder jobs
  * - Checks for low stock and wallet milestone
- *
- * Requirements: 2.1-2.11, 11.1-11.4, 13.1
  */
 
 import { Prisma, Borrow, Book } from '@prisma/client';
@@ -301,8 +299,6 @@ async function checkWalletMilestone(tx: Prisma.TransactionClient): Promise<void>
  * @param userEmail - The email of the user returning the book
  * @param bookIsbn - The ISBN of the book to return
  * @returns ReturnResult with the borrow record and whether it was already returned
- *
- * Requirements: 3.1-3.6
  */
 export async function returnBook(userEmail: string, bookIsbn: string): Promise<ReturnResult> {
   // Single transaction with advisory lock inside

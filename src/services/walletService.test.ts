@@ -5,8 +5,6 @@
  * - Property 1: Wallet Balance Derivability (Round-Trip)
  * - Wallet movement deduplication
  *
- * Requirements: 6.2, 6.3, 6.5, 17.1
- *
  * NOTE: These are integration tests that require a running PostgreSQL database.
  * Run with: npm test -- --testPathPattern="walletService.test.ts"
  * Ensure DATABASE_URL is set in .env and the database is running.

@@ -4,8 +4,6 @@
  * Key features:
  * - getEmails() - Get simulated emails with filters and pagination
  * - createEmail() - Create a simulated email with dedupeKey for idempotency
- *
- * Requirements: 15.1-15.4
  */
 
 import { SimulatedEmail, EmailType, Prisma } from '@prisma/client';
@@ -45,8 +43,6 @@ export interface EmailResponse {
  * Supports:
  * - recipient: filter by recipient email
  * - type: filter by email type
- *
- * Requirements: 15.1-15.4
  *
  * @param filters - Optional filters for recipient, type, and pagination
  * @returns Paginated list of emails

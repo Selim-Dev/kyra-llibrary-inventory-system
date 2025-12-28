@@ -7,8 +7,6 @@
  * - Wraps res.json to capture response body
  * - Stores/retrieves idempotency records (24 hour expiry)
  * - Scopes keys per user + endpoint
- *
- * Requirements: 17.3-17.6
  */
 
 import { Request, Response, NextFunction } from 'express';

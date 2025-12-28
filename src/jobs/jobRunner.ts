@@ -7,8 +7,6 @@
  * - Exponential backoff for retries
  * - Handles stuck PROCESSING jobs (lease expired)
  * - Clear activeKey ONLY on terminal states (COMPLETED/CANCELED)
- *
- * Requirements: 12.8, 13.5
  */
 
 import { Job, JobStatus, JobType, Prisma } from '@prisma/client';

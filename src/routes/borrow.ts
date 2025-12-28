@@ -3,8 +3,6 @@
  *
  * POST /api/books/:isbn/borrow - Borrow a book
  * POST /api/books/:isbn/return - Return a book
- *
- * Requirements: 2.1-2.11, 3.1-3.6
  */
 
 import { Router, Request, Response, NextFunction } from 'express';

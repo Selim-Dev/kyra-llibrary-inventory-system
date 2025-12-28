@@ -7,8 +7,6 @@ import prisma from '../prisma/client';
  * - Auto-creates user if not exists
  * - Returns 400 if header missing
  * - Attaches user to request object
- *
- * Requirements: 18.1, 18.3, 18.4
  */
 export async function userIdentification(
   req: Request,

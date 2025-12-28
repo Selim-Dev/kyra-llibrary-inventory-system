@@ -5,8 +5,6 @@ import { AppError } from '../utils/errors';
  * Global error handler middleware.
  * - Maps custom error types to HTTP status codes
  * - Returns consistent error format: { error: { code, message } }
- *
- * Requirements: 19.2, 19.3
  */
 export function errorHandler(
   err: Error,

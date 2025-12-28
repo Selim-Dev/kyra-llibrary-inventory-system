@@ -1,8 +1,6 @@
 /**
  * Money formatting utilities.
  * All monetary values are stored as integers (cents) to avoid floating-point precision issues.
- *
- * Requirements: 19.5
  */
 
 /**

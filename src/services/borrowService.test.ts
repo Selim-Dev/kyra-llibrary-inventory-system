@@ -6,8 +6,6 @@
  * - Property 10: Last-Copy Concurrency Safety
  * - Property 3: Borrow Idempotency
  *
- * Requirements: 2.1, 2.9, 2.10, 2.11, 16.1, 16.4, 17.1
- *
  * NOTE: These are integration tests that require a running PostgreSQL database.
  * Run with: npm test -- --testPathPattern="borrowService.test.ts"
  * Ensure DATABASE_URL is set in .env and the database is running.

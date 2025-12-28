@@ -5,8 +5,6 @@
  * - getBalance() - Calculate balance from SUM of all movements
  * - addMovement() - Add a wallet movement with dedupeKey for idempotency
  * - getMovements() - Get movements with filters and pagination
- *
- * Requirements: 6.1-6.6
  */
 
 import { MovementType, WalletMovement, Prisma } from '@prisma/client';
@@ -70,8 +68,6 @@ export interface MovementResponse {
  * Get the current wallet balance by summing all movements.
  * The balance is always derivable from the sum of all movements.
  *
- * Requirements: 6.3, 6.5
- *
  * @returns WalletBalance with cents and formatted string
  */
 export async function getBalance(): Promise<WalletBalance> {
@@ -92,8 +88,6 @@ export async function getBalance(): Promise<WalletBalance> {
  * Add a wallet movement with optional dedupeKey for idempotency.
  * If a dedupeKey is provided and already exists, the operation is skipped
  * (returns the existing movement).
- *
- * Requirements: 6.2, 6.4, 6.6
  *
  * @param data - Movement data including amount, type, reason, and optional dedupeKey
  * @returns The created or existing WalletMovement
@@ -195,8 +189,6 @@ export async function addMovementInTransaction(
 
 /**
  * Get wallet movements with optional filters and pagination.
- *
- * Requirements: 9.2, 9.3, 9.4
  *
  * @param filters - Optional filters for type, date range, and pagination
  * @returns Paginated list of movements with formatted amounts
