@@ -83,7 +83,7 @@ jobs:
             mkdir -p $REPO_DIR
 
             cat <<EOF > $REPO_DIR/.env
-            DATABASE_URL=postgresql://postgres:postgres@db:5432/library?schema=public
+            DATABASE_URL=postgresql://postgres:postgres@library-db:5432/library?schema=public
             NODE_ENV=production
             PORT=3000
             EOF

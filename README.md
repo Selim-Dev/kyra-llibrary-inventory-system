@@ -20,26 +20,27 @@ A REST API for managing a library/book store inventory system built with Node.js
 - **ORM**: Prisma
 - **Testing**: Jest + Supertest
 
+## Live API
+
+The API is deployed and available at:
+
+**Base URL**: `http://16.170.59.228:4000`
+
+Example endpoints:
+- Health: `http://16.170.59.228:4000/health`
+- Books: `http://16.170.59.228:4000/api/books`
+
 ## Quick Start
 
 ### Using Docker (Recommended)
 
-#### Production Mode
+#### Development Mode (with hot reload)
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd library-inventory-system
 
-# Start the application with Docker Compose (production)
-docker-compose up --build
-
-# The API will be available at http://localhost:3000
-```
-
-#### Development Mode (with hot reload)
-
-```bash
 # Start the application in development mode
 docker-compose -f docker-compose.dev.yml up --build
 
@@ -47,19 +48,28 @@ docker-compose -f docker-compose.dev.yml up --build
 # Source code changes will automatically reload the server
 ```
 
+#### Production Mode (local)
+
+```bash
+# Start the application with Docker Compose (production)
+docker-compose up --build
+
+# The API will be available at http://localhost:3000
+```
+
 #### Docker Commands Reference
 
 ```bash
-# Production
+# Development (recommended for local work)
+docker-compose -f docker-compose.dev.yml up --build
+docker-compose -f docker-compose.dev.yml down
+docker-compose -f docker-compose.dev.yml down -v  # Remove volumes too
+
+# Production (local)
 docker-compose up --build          # Start in foreground
 docker-compose up -d --build       # Start in background
 docker-compose down                # Stop containers
 docker-compose down -v             # Stop and remove volumes
-
-# Development
-docker-compose -f docker-compose.dev.yml up --build
-docker-compose -f docker-compose.dev.yml down
-docker-compose -f docker-compose.dev.yml down -v
 ```
 
 ### Local Development
@@ -202,6 +212,17 @@ All errors follow a consistent format:
 | `DATABASE_URL` | PostgreSQL connection string | - |
 | `PORT` | Server port | 3000 |
 | `NODE_ENV` | Environment (development/production) | development |
+
+## Postman Collection
+
+A Postman collection is included in the `postman/` folder with two environments:
+- **Local**: `http://localhost:3000` - for local development
+- **Production**: `http://16.170.59.228:4000` - live deployed API
+
+Import both files into Postman:
+1. `postman/Library_Inventory_System.postman_collection.json`
+2. `postman/Library_Inventory_System.postman_environment.json` (Local)
+3. `postman/Library_Inventory_System_Production.postman_environment.json` (Production)
 
 
 
