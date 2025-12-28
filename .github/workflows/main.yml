@@ -34,6 +34,17 @@ jobs:
           if [ -n "${{ secrets.PRIVATE_KEY }}" ]; then echo "PRIVATE_KEY: set"; else echo "PRIVATE_KEY: missing"; fi
           docker --version
 
+      - name: Clear Docker Hub credentials
+        run: |
+          docker logout https://index.docker.io/v1/ || true
+          docker logout registry-1.docker.io || true
+          docker logout docker.io || true
+
+      - name: Test pulling base image
+        run: |
+          set -e
+          docker pull node:20-alpine
+
       - name: Build, Tag & Push to ECR
         run: |
           set -euo pipefail
@@ -53,19 +64,7 @@ jobs:
     needs: Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Copy docker-compose to server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOSTNAME }}
-          username: ${{ secrets.USER_NAME }}
-          key: ${{ secrets.PRIVATE_KEY }}
-          source: "docker-compose.yml,books.json,prisma"
-          target: "/home/ubuntu/library-inventory-system"
-
-      - name: SSH & Run Deployment
+      - name: SSH & Run Deployment Commands
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOSTNAME }}
@@ -78,35 +77,54 @@ jobs:
             IMAGE_TAG="${{ github.run_number }}"
             ECR_IMAGE_URI="${{ secrets.ECR_IMAGE_URI }}"
             REGISTRY="${ECR_IMAGE_URI%/*}"
+            REPO="${ECR_IMAGE_URI##*/}"
             ECR_IMAGE="$ECR_IMAGE_URI:$IMAGE_TAG"
 
-            cd $REPO_DIR
+            mkdir -p $REPO_DIR
 
-            # Authenticate with ECR
+            cat <<EOF > $REPO_DIR/.env
+            DATABASE_URL=postgresql://postgres:postgres@db:5432/library?schema=public
+            NODE_ENV=production
+            PORT=3000
+            EOF
+
             aws ecr get-login-password \
               --region ${{ secrets.AWS_REGION }} \
               | docker login \
                 --username AWS \
                 --password-stdin "$REGISTRY"
 
-            # Pull the new image
             docker pull "$ECR_IMAGE"
 
-            # Create docker-compose override to use ECR image and port 4000
-            cat <<EOF > docker-compose.override.yml
-            services:
-              app:
-                image: $ECR_IMAGE
-                build: !reset null
-                ports:
-                  - "4000:3000"
-            EOF
+            # Stop and remove existing containers
+            docker rm -f library-app || true
+            docker rm -f library-db || true
 
-            # Stop existing containers
-            docker-compose down || true
+            # Create network if not exists
+            docker network create library-network || true
 
-            # Start with new image
-            docker-compose up -d
+            # Start PostgreSQL container
+            docker run -d \
+              --name library-db \
+              --network library-network \
+              --restart unless-stopped \
+              -e POSTGRES_USER=postgres \
+              -e POSTGRES_PASSWORD=postgres \
+              -e POSTGRES_DB=library \
+              -v library_postgres_data:/var/lib/postgresql/data \
+              postgres:15-alpine
 
-            # Cleanup
+            # Wait for PostgreSQL to be ready
+            echo "Waiting for PostgreSQL to start..."
+            sleep 10
+
+            # Start app container
+            docker run -d \
+              --name library-app \
+              --network library-network \
+              --restart unless-stopped \
+              -p 4000:3000 \
+              --env-file "$REPO_DIR/.env" \
+              "$ECR_IMAGE"
+
             docker image prune -f
