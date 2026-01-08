@@ -8,19 +8,15 @@
  * GET /api/admin/users/:email/history - View user history (bonus)
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
-import { EventType, EmailType } from '@prisma/client';
+import { Router } from 'express';
 import { userIdentification, adminOnly, validate } from '../middleware';
-import { getEvents } from '../services/eventService';
-import { getBalance, getMovements } from '../services/walletService';
-import { getEmails } from '../services/emailService';
-import { getUserHistory } from '../services/userService';
 import {
   getEventsSchema,
   getWalletMovementsSchema,
   getEmailsSchema,
   getUserHistorySchema,
 } from '../schemas';
+import { adminController } from '../controllers';
 
 const router = Router();
 
@@ -49,26 +45,7 @@ router.use(adminOnly);
 router.get(
   '/events',
   validate(getEventsSchema),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { userEmail, bookIsbn, type, startDate, endDate, page, pageSize } =
-        req.query;
-
-      const result = await getEvents({
-        userEmail: userEmail as string | undefined,
-        bookIsbn: bookIsbn as string | undefined,
-        type: type as EventType | undefined,
-        startDate: startDate as string | undefined,
-        endDate: endDate as string | undefined,
-        page: page as string | undefined,
-        pageSize: pageSize as string | undefined,
-      });
-
-      res.status(200).json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
+  adminController.getEvents.bind(adminController)
 );
 
 /**
@@ -80,18 +57,7 @@ router.get(
  * - 200: Wallet balance in cents and formatted string
  * - 403: Not admin
  */
-router.get(
-  '/wallet',
-  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const balance = await getBalance();
-
-      res.status(200).json(balance);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
+router.get('/wallet', adminController.getWalletBalance.bind(adminController));
 
 /**
  * GET /api/admin/wallet/movements
@@ -112,27 +78,8 @@ router.get(
 router.get(
   '/wallet/movements',
   validate(getWalletMovementsSchema),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { type, startDate, endDate, page, pageSize } = req.query;
-
-      const result = await getMovements({
-        type: type as 'credit' | 'debit' | undefined,
-        startDate: startDate ? new Date(startDate as string) : undefined,
-        endDate: endDate ? new Date(endDate as string) : undefined,
-        page: page as string | undefined,
-        pageSize: pageSize as string | undefined,
-      });
-
-      res.status(200).json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
+  adminController.getWalletMovements.bind(adminController)
 );
-
-export default router;
-
 
 /**
  * GET /api/admin/emails
@@ -152,24 +99,8 @@ export default router;
 router.get(
   '/emails',
   validate(getEmailsSchema),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { recipient, type, page, pageSize } = req.query;
-
-      const result = await getEmails({
-        recipient: recipient as string | undefined,
-        type: type as EmailType | undefined,
-        page: page as string | undefined,
-        pageSize: pageSize as string | undefined,
-      });
-
-      res.status(200).json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
+  adminController.getEmails.bind(adminController)
 );
-
 
 /**
  * GET /api/admin/users/:email/history
@@ -187,15 +118,7 @@ router.get(
 router.get(
   '/users/:email/history',
   validate(getUserHistorySchema),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { email } = req.params;
-
-      const result = await getUserHistory(email);
-
-      res.status(200).json(result);
-    } catch (error) {
-      next(error);
-    }
-  }
+  adminController.getUserHistory.bind(adminController)
 );
+
+export default router;
