@@ -13,6 +13,7 @@
 import { Prisma, Borrow, Book } from '@prisma/client';
 import prisma from '../prisma/client';
 import { NotFoundError, ConflictError } from '../utils/errors';
+import { reminderQueue, restockQueue } from '../queues';
 
 // Constants
 const MAX_ACTIVE_BORROWS = 3;
@@ -50,8 +51,11 @@ function hashTextToInt(text: string): number {
  * @returns BorrowResult with the borrow record and whether it was existing
  */
 export async function borrowBook(userEmail: string, bookIsbn: string): Promise<BorrowResult> {
+  let shouldScheduleRestock = false;
+  let restockBookData: { bookId: string; isbn: string; bookTitle: string } | null = null;
+
   // Single transaction with advisory lock inside
-  return prisma.$transaction(
+  const result = await prisma.$transaction(
     async (tx) => {
       // 0. Acquire advisory lock for this user (serializes concurrent requests)
       const lockKey = hashTextToInt(userEmail);
@@ -146,24 +150,49 @@ export async function borrowBook(userEmail: string, bookIsbn: string): Promise<B
         },
       });
 
-      // 8. Schedule reminder job with activeKey
-      await tx.job.create({
-        data: {
-          type: 'REMINDER',
-          borrowId: borrow.id,
-          activeKey: `REMINDER:${borrow.id}`,
-          payload: { borrowId: borrow.id, userEmail },
-          runAt: dueAt,
-        },
-      });
-
-      // 9. Check for low stock notification (at exactly 1 copy remaining)
+      // 8. Check for low stock notification (at exactly 1 copy remaining)
       const updatedBook = await tx.book.findUnique({ where: { isbn: bookIsbn } });
       if (updatedBook && updatedBook.availableCopies === LOW_STOCK_THRESHOLD) {
-        await scheduleRestockIfNeeded(tx, book);
+        // Create low stock email
+        const emailDedupeKey = `LOW_STOCK:${book.isbn}:${Date.now()}`;
+        await tx.simulatedEmail.create({
+          data: {
+            recipient: 'supply@library.com',
+            subject: `Low Stock Alert: ${book.title}`,
+            body: `Book "${book.title}" (ISBN: ${book.isbn}) has only 1 copy remaining. A restock has been scheduled.`,
+            type: 'LOW_STOCK',
+            dedupeKey: emailDedupeKey,
+          },
+        });
+
+        // Record low stock email event
+        await tx.event.create({
+          data: {
+            type: 'LOW_STOCK_EMAIL',
+            bookId: book.id,
+            dedupeKey: `LOW_STOCK_EMAIL:${book.isbn}:${Date.now()}`,
+          },
+        });
+
+        // Record restock scheduled event
+        await tx.event.create({
+          data: {
+            type: 'RESTOCK_SCHEDULED',
+            bookId: book.id,
+            dedupeKey: `RESTOCK_SCHEDULED:${book.id}:${Date.now()}`,
+          },
+        });
+
+        // Mark that we need to schedule restock after transaction
+        shouldScheduleRestock = true;
+        restockBookData = {
+          bookId: book.id,
+          isbn: book.isbn,
+          bookTitle: book.title,
+        };
       }
 
-      // 10. Check wallet milestone
+      // 9. Check wallet milestone
       await checkWalletMilestone(tx);
 
       return { borrow, isExisting: false };
@@ -173,73 +202,44 @@ export async function borrowBook(userEmail: string, bookIsbn: string): Promise<B
       timeout: 30000,
     }
   );
-}
 
-/**
- * Schedule a restock job if one doesn't already exist for this book
- */
-async function scheduleRestockIfNeeded(
-  tx: Prisma.TransactionClient,
-  book: Book
-): Promise<void> {
-  // Check if there's already a pending restock job for this book
-  const existingJob = await tx.job.findFirst({
-    where: {
-      bookId: book.id,
-      type: 'RESTOCK',
-      activeKey: { not: null },
-    },
-  });
+  // Schedule jobs with BullMQ (after transaction commits)
+  if (!result.isExisting) {
+    // Schedule reminder job
+    const delay = result.borrow.dueAt.getTime() - Date.now();
+    await reminderQueue.add(
+      'send-reminder',
+      {
+        borrowId: result.borrow.id,
+        userEmail,
+        bookTitle: result.borrow.book.title,
+        dueAt: result.borrow.dueAt.toISOString(),
+      },
+      {
+        delay: Math.max(0, delay),
+        jobId: `reminder:${result.borrow.id}`, // Idempotency
+      }
+    );
 
-  if (existingJob) {
-    return; // Already have a pending restock job
+    // Schedule restock job if needed
+    if (shouldScheduleRestock && restockBookData) {
+      const bookData = restockBookData as { bookId: string; isbn: string; bookTitle: string };
+      await restockQueue.add(
+        'restock-book',
+        {
+          bookId: bookData.bookId,
+          isbn: bookData.isbn,
+          bookTitle: bookData.bookTitle,
+        },
+        {
+          delay: 60 * 60 * 1000, // 1 hour
+          jobId: `restock:${bookData.bookId}:${Date.now()}`,
+        }
+      );
+    }
   }
 
-  // Schedule restock for 1 hour later
-  const runAt = new Date(Date.now() + 60 * 60 * 1000);
-
-  // Create restock job
-  const job = await tx.job.create({
-    data: {
-      type: 'RESTOCK',
-      bookId: book.id,
-      activeKey: `RESTOCK:${book.id}`,
-      payload: { bookId: book.id, isbn: book.isbn },
-      runAt,
-    },
-  });
-
-  // Create low stock email
-  const emailDedupeKey = `LOW_STOCK:${book.isbn}:${job.id}`;
-  await tx.simulatedEmail.create({
-    data: {
-      recipient: 'supply@library.com',
-      subject: `Low Stock Alert: ${book.title}`,
-      body: `Book "${book.title}" (ISBN: ${book.isbn}) has only 1 copy remaining. A restock has been scheduled.`,
-      type: 'LOW_STOCK',
-      dedupeKey: emailDedupeKey,
-    },
-  });
-
-  // Record low stock email event
-  await tx.event.create({
-    data: {
-      type: 'LOW_STOCK_EMAIL',
-      bookId: book.id,
-      jobId: job.id,
-      dedupeKey: `LOW_STOCK_EMAIL:${book.isbn}:${job.id}`,
-    },
-  });
-
-  // Record restock scheduled event
-  await tx.event.create({
-    data: {
-      type: 'RESTOCK_SCHEDULED',
-      bookId: book.id,
-      jobId: job.id,
-      dedupeKey: `RESTOCK_SCHEDULED:${job.id}`,
-    },
-  });
+  return result;
 }
 
 /**
@@ -302,7 +302,7 @@ async function checkWalletMilestone(tx: Prisma.TransactionClient): Promise<void>
  */
 export async function returnBook(userEmail: string, bookIsbn: string): Promise<ReturnResult> {
   // Single transaction with advisory lock inside
-  return prisma.$transaction(
+  const result = await prisma.$transaction(
     async (tx) => {
       // 0. Acquire advisory lock for this user (serializes concurrent requests)
       const lockKey = hashTextToInt(userEmail);
@@ -378,20 +378,7 @@ export async function returnBook(userEmail: string, bookIsbn: string): Promise<R
         WHERE "isbn" = ${bookIsbn}
       `;
 
-      // 5. Cancel reminder job (set status CANCELED, activeKey = null)
-      await tx.job.updateMany({
-        where: {
-          borrowId: activeBorrow.id,
-          type: 'REMINDER',
-          activeKey: { not: null },
-        },
-        data: {
-          status: 'CANCELED',
-          activeKey: null,
-        },
-      });
-
-      // 6. Record event with dedupeKey
+      // 5. Record event with dedupeKey
       await tx.event.create({
         data: {
           type: 'RETURN',
@@ -409,6 +396,22 @@ export async function returnBook(userEmail: string, bookIsbn: string): Promise<R
       timeout: 30000,
     }
   );
+
+  // Remove reminder job from BullMQ (after transaction commits)
+  if (!result.isExisting) {
+    try {
+      const job = await reminderQueue.getJob(`reminder:${result.borrow.id}`);
+      if (job) {
+        await job.remove();
+        console.log(`Removed reminder job for borrow ${result.borrow.id}`);
+      }
+    } catch (error) {
+      // Job might not exist or already processed - that's okay
+      console.log(`Could not remove reminder job for borrow ${result.borrow.id}:`, error);
+    }
+  }
+
+  return result;
 }
 
 export default {

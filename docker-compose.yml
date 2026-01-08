@@ -8,10 +8,14 @@ services:
       - "${PORT:-3000}:3000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/library?schema=public
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - NODE_ENV=production
       - PORT=3000
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     networks:
@@ -36,8 +40,24 @@ services:
     networks:
       - library-network
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - library-network
+
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   library-network:
