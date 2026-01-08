@@ -7,8 +7,9 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { buyBook, cancelPurchase } from '../services/buyService';
-import { userIdentification, idempotency } from '../middleware';
+import { userIdentification, idempotency, validate } from '../middleware';
 import { formatMoney } from '../utils/money';
+import { buyBookSchema, cancelPurchaseSchema } from '../schemas';
 
 const router = Router();
 
@@ -29,6 +30,7 @@ const router = Router();
  */
 router.post(
   '/books/:isbn/buy',
+  validate(buyBookSchema),
   userIdentification,
   idempotency(true), // Require idempotency key
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -73,6 +75,7 @@ router.post(
  */
 router.post(
   '/purchases/:id/cancel',
+  validate(cancelPurchaseSchema),
   userIdentification,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

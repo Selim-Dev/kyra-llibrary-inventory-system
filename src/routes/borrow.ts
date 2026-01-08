@@ -7,8 +7,9 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { borrowBook, returnBook } from '../services/borrowService';
-import { userIdentification } from '../middleware';
+import { userIdentification, validate } from '../middleware';
 import { formatMoney } from '../utils/money';
+import { borrowBookSchema, returnBookSchema } from '../schemas';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ const router = Router();
  */
 router.post(
   '/:isbn/borrow',
+  validate(borrowBookSchema),
   userIdentification,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -72,6 +74,7 @@ router.post(
  */
 router.post(
   '/:isbn/return',
+  validate(returnBookSchema),
   userIdentification,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

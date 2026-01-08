@@ -6,6 +6,8 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { searchBooks } from '../services/bookService';
+import { validate } from '../middleware';
+import { searchBooksSchema } from '../schemas';
 
 const router = Router();
 
@@ -26,6 +28,7 @@ const router = Router();
  */
 router.get(
   '/',
+  validate(searchBooksSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { title, author, genre, page, pageSize } = req.query;

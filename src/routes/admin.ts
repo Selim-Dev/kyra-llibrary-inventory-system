@@ -10,11 +10,17 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { EventType, EmailType } from '@prisma/client';
-import { userIdentification, adminOnly } from '../middleware';
+import { userIdentification, adminOnly, validate } from '../middleware';
 import { getEvents } from '../services/eventService';
 import { getBalance, getMovements } from '../services/walletService';
 import { getEmails } from '../services/emailService';
 import { getUserHistory } from '../services/userService';
+import {
+  getEventsSchema,
+  getWalletMovementsSchema,
+  getEmailsSchema,
+  getUserHistorySchema,
+} from '../schemas';
 
 const router = Router();
 
@@ -42,6 +48,7 @@ router.use(adminOnly);
  */
 router.get(
   '/events',
+  validate(getEventsSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { userEmail, bookIsbn, type, startDate, endDate, page, pageSize } =
@@ -104,6 +111,7 @@ router.get(
  */
 router.get(
   '/wallet/movements',
+  validate(getWalletMovementsSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { type, startDate, endDate, page, pageSize } = req.query;
@@ -143,6 +151,7 @@ export default router;
  */
 router.get(
   '/emails',
+  validate(getEmailsSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { recipient, type, page, pageSize } = req.query;
@@ -177,6 +186,7 @@ router.get(
  */
 router.get(
   '/users/:email/history',
+  validate(getUserHistorySchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { email } = req.params;
