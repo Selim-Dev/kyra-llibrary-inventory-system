@@ -18,6 +18,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.use('/', healthRouter);
 app.use('/health', healthRouter);
 app.use('/api/books', booksRouter); // GET /api/books for search
 app.use('/api/books', borrowRouter); // POST /api/books/:isbn/borrow and /api/books/:isbn/return
